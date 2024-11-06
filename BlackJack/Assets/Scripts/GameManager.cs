@@ -6,101 +6,72 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    public List<GameObject> deck = new List<GameObject>();
-    public List<GameObject> backUpDeck = new List<GameObject>();
-    public GameObject shuffledDeck;
-    public GameObject unShuffledDeck;
+    public List<Card> deck = new List<Card>();
+    public List<Card> discardDeck = new List<Card>();
+    public List<Card> playersHand = new List<Card>();
+    public Transform[] cardSlots;
+    public bool[] availableCardSlots;
 
     // Start is called before the first frame update
     void Start()
     {
-        SaveUnShuffledDeck(deck, backUpDeck);
-        ShuffleDeck(deck);
+
     }
 
     // Update is called once per frame
     void Update()
     {
-        //if(Input.GetKeyDown("space"))
-        //{
-        //    ShuffleDeck(deck);
-        //}
-        //if (Input.GetKeyDown("p"))      //Deal to player
-        //{
-        //    DrawCardPlayer(deck, player);
-        //}
-        //if (Input.GetKeyDown("d"))      //deal to dealer
-        //{
-        //    DrawCardDealer(deck, dealer);
-        //}
-        if (Input.GetKeyDown("r"))      //Reset Game
-        {
-            RestartGame(deck);
-        }
+
     }
 
-    public void RestartGame(List<GameObject> deck)
+    public void DrawCard()
     {
-        ReplaceDeck(deck, backUpDeck);
+        if (deck.Count >= 1)
+        {
+            Card randCard = deck[UnityEngine.Random.Range(0, deck.Count)];
 
-        //for (int i = player.transform.childCount - 1; i >= 0; i--)
-        //{
-        //    player.transform.GetChild(i).transform.parent = deck[i].transform;
-        //    player.transform.GetChild(i).transform.position = deck[i].transform.position;
-        //}
-
-        //for (int i = dealer.transform.childCount - 1; i >= 0; i--)
-        //{
-        //    dealer.transform.GetChild(i).transform.parent = deck[i].transform;
-        //    dealer.transform.GetChild(i).transform.position = deck[i].transform.position;
-        //}
+            for (int i = 0; i < availableCardSlots.Length; i++)
+            {
+                if (availableCardSlots[i] == true)
+                {
+                    randCard.gameObject.SetActive(true);
+                    randCard.handIndex = i;
+                    randCard.transform.position = cardSlots[i].position;
+                    randCard.hasBeenPlayed = false;
+                    availableCardSlots[i] = false;
+                    playersHand.Add(randCard);
+                    deck.Remove(randCard);
+                    return;
+                }
+            }
+        }
     }
 
-    public void SaveUnShuffledDeck(List<GameObject> deck, List<GameObject> backUpDeck)
+    public void Shuffle()
     {
-        for (int count = deck.Count - 1; count >= 0; --count)
+        if (discardDeck.Count >= 1)
         {
-            backUpDeck[count] = deck[count];
+            foreach (Card card in discardDeck)
+            {
+                deck.Add(card);
+            }
+            discardDeck.Clear();
+            playersHand.Clear();
         }
     }
 
-    public void ReplaceDeck(List<GameObject> deck, List<GameObject> backUpDeck)
+    public void Discard()
     {
-        for (int count = backUpDeck.Count - 1; count >= 0; --count)
+        for (int i = 0; i < playersHand.Count; i++)
         {
-            deck[count] = backUpDeck[count];
+            if (playersHand[i].hasBeenPlayed == false)
+            {
+                playersHand[i].hasBeenPlayed = true;
+                availableCardSlots[i] = true;
+                playersHand[i].gameObject.SetActive(false);
+                discardDeck.Add(playersHand[i]);
+            }
         }
-
-        for (int i = 0; i < 10; i++)
-        {
-            
-        }
+        playersHand.Clear();
     }
-
-    public void ShuffleDeck(List<GameObject> tempdeck)
-    {
-        for (int count = tempdeck.Count - 1; count >= 0; --count)
-        {
-            int tempIndex = UnityEngine.Random.Range(0, count + 1);
-
-            GameObject tmp = tempdeck[count];
-            tempdeck[count] = tempdeck[tempIndex];
-            tempdeck[tempIndex] = tmp;
-            tempdeck[count].transform.parent = shuffledDeck.transform;
-        }
-    }
-
-    //public void DrawCardPlayer(List<CardInfo> deck, GameObject player)
-    //{
-    //    deck[index].transform.parent = player.transform;
-    //    deck[index].transform.position = player.transform.position;
-    //    ++index;
-    //}
-
-    //public void DrawCardDealer(List<CardInfo> deck, GameObject dealer)
-    //{
-    //    deck[index].transform.parent = dealer.transform;
-    //    deck[index].transform.position = dealer.transform.position;
-    //    ++index;
-    //}
 }

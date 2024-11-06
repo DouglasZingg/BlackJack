@@ -2,15 +2,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CardInfo : MonoBehaviour
+public class Card : MonoBehaviour
 {
-    [SerializeField] int cardValue;
-    [SerializeField] bool isAce;
+    public int cardValue;
+    public int handIndex;
+    public bool isAce;
+    public bool hasBeenPlayed;
 
     // Start is called before the first frame update
     void Start()
     {
-        
+
     }
 
     // Update is called once per frame
