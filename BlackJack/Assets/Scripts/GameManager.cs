@@ -2,15 +2,26 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Xml.Serialization;
+using TMPro;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
     public List<Card> deck = new List<Card>();
     public List<Card> discardDeck = new List<Card>();
-    public List<Card> playersHand = new List<Card>();
-    public Transform[] cardSlots;
-    public bool[] availableCardSlots;
+
+    public TextMeshProUGUI deckSize;
+    public TextMeshProUGUI wonText;
+    public TextMeshProUGUI lostText;
+    public TextMeshProUGUI tieText;
+
+    public Player player;
+    public Dealer dealer;
+
+    public GameObject startPile;
+    public GameObject discardPile;
 
     // Start is called before the first frame update
     void Start()
@@ -21,57 +32,113 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        deckSize.text = deck.Count.ToString();
 
-    }
-
-    public void DrawCard()
-    {
-        if (deck.Count >= 1)
+        if (player.endTurn == true && dealer.turndone == true)
         {
-            Card randCard = deck[UnityEngine.Random.Range(0, deck.Count)];
-
-            for (int i = 0; i < availableCardSlots.Length; i++)
+            if (dealer.instantLost == true)
             {
-                if (availableCardSlots[i] == true)
+                wonText.gameObject.SetActive(true);
+            }
+            else if (player.instantLost == true)
+            {
+                lostText.gameObject.SetActive(true);
+            }
+            else
+            {
+                int playerdifference = 21 - player.value;
+                int dealerdifference = 21 - dealer.dealersValue;
+
+                if (playerdifference == 0 && dealerdifference == 0)
                 {
-                    randCard.gameObject.SetActive(true);
-                    randCard.handIndex = i;
-                    randCard.transform.position = cardSlots[i].position;
-                    randCard.hasBeenPlayed = false;
-                    availableCardSlots[i] = false;
-                    playersHand.Add(randCard);
-                    deck.Remove(randCard);
-                    return;
+                    tieText.gameObject.SetActive(true);
+                }
+
+                if (playerdifference == 0 || playerdifference < dealerdifference || player.playersHand.Count == 5)
+                {
+                    wonText.gameObject.SetActive(true);
+                }
+
+                if (dealerdifference == 0 || dealerdifference < playerdifference || dealer.dealersHand.Count == 5)
+                {
+                    lostText.gameObject.SetActive(true);
                 }
             }
+
         }
     }
 
-    public void Shuffle()
+    public void ResetGame()
     {
         if (discardDeck.Count >= 1)
         {
             foreach (Card card in discardDeck)
             {
                 deck.Add(card);
+                card.transform.position = startPile.transform.position;
             }
             discardDeck.Clear();
-            playersHand.Clear();
+            player.playersHand.Clear();
+            dealer.dealersHand.Clear();
         }
     }
 
     public void Discard()
     {
-        for (int i = 0; i < playersHand.Count; i++)
+        lostText.gameObject.SetActive(false);
+        wonText.gameObject.SetActive(false);
+        tieText.gameObject.SetActive(false);
+        player.endTurn = false;
+        dealer.turndone = false;
+        player.instantLost = false;
+        dealer.instantLost = false;
+
+        for (int i = 0; i < player.playersHand.Count; i++)
         {
-            if (playersHand[i].hasBeenPlayed == false)
+            if (player.playersHand[i].hasBeenPlayed == false)
             {
-                playersHand[i].hasBeenPlayed = true;
-                availableCardSlots[i] = true;
-                playersHand[i].gameObject.SetActive(false);
-                discardDeck.Add(playersHand[i]);
+                player.playersHand[i].hasBeenPlayed = true;
+                player.availablePlayerCardSlots[i] = true;
+                player.playersHand[i].transform.position = discardPile.transform.position;
+                discardDeck.Add(player.playersHand[i]);
             }
         }
-        playersHand.Clear();
+
+        for (int i = 0; i < dealer.dealersHand.Count; i++)
+        {
+            if (dealer.dealersHand[i].hasBeenPlayed == false)
+            {
+                dealer.dealersHand[i].hasBeenPlayed = true;
+                dealer.availableDealerCardSlots[i] = true;
+                dealer.dealersHand[i].transform.position = discardPile.transform.position;
+                discardDeck.Add(dealer.dealersHand[i]);
+            }
+        }
+
+        player.playersHand.Clear();
+        player.value = 0;
+
+        dealer.dealersHand.Clear();
+        dealer.dealersValue = 0;
+
+        if (deck.Count < 10)
+        {
+            ResetGame();
+        }
+        else
+        {
+            PlayGame();
+        }
+    }
+
+    public void PlayGame()
+    {
+        dealer.hiddenCard.gameObject.SetActive(true);
+
+        for (int i = 0; i < 2; i++)
+        {
+            dealer.Hit();
+            player.Hit();
+        }
     }
 }
