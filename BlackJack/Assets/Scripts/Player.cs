@@ -43,13 +43,6 @@ public class Player : MonoBehaviour
                     randCard.hasBeenPlayed = false;
                     availablePlayerCardSlots[i] = false;
                     playersHand.Add(randCard);
-                    value += randCard.cardValue;
-                    if (value > 21)
-                    {
-                        instantLost = true;
-                        Stand();
-                        break;
-                    }
                     gameManager.deck.Remove(randCard);
                     return;
                 }
@@ -59,7 +52,32 @@ public class Player : MonoBehaviour
 
     public void Stand()
     {
+        CalculateValue();
         dealer.canNowPlay = true;
         endTurn = true;
+        gameManager.nextRoundButton.interactable = true;
+    }
+
+    public void CalculateValue()
+    {
+        for (int i = 0; i < playersHand.Count; i++)
+        {
+            if(playersHand[i].isAce == true)
+            {
+                if(value + 11 > 21)
+                {
+                    value += playersHand[i].cardValue;
+                }
+                else
+                {
+                    value += playersHand[i].cardValue;
+                    value += 10;
+                }
+            }
+            else
+            {
+                value += playersHand[i].cardValue;
+            }
+        }
     }
 }

@@ -23,6 +23,10 @@ public class GameManager : MonoBehaviour
     public GameObject startPile;
     public GameObject discardPile;
 
+    public Button hitButton;
+    public Button nextRoundButton;
+    public Button standButton;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -36,35 +40,51 @@ public class GameManager : MonoBehaviour
 
         if (player.endTurn == true && dealer.turndone == true)
         {
-            if (dealer.instantLost == true)
+            int playerDiff = 21 - player.value;
+            int dealerDiff = 21 - dealer.dealersValue;
+
+            if (player.value == 21 && dealer.dealersValue != 21)
             {
                 wonText.gameObject.SetActive(true);
+                hitButton.interactable = false;
+                standButton.interactable = false;
             }
-            else if (player.instantLost == true)
+            else if (dealer.dealersValue == 21 && player.value != 21)
             {
                 lostText.gameObject.SetActive(true);
+                hitButton.interactable = false;
+                standButton.interactable = false;
             }
-            else
+            else if(dealer.dealersValue == player.value/* && player.value < 21*/)
             {
-                int playerdifference = 21 - player.value;
-                int dealerdifference = 21 - dealer.dealersValue;
-
-                if (playerdifference == 0 && dealerdifference == 0)
-                {
-                    tieText.gameObject.SetActive(true);
-                }
-
-                if (playerdifference == 0 || playerdifference < dealerdifference || player.playersHand.Count == 5)
-                {
-                    wonText.gameObject.SetActive(true);
-                }
-
-                if (dealerdifference == 0 || dealerdifference < playerdifference || dealer.dealersHand.Count == 5)
-                {
-                    lostText.gameObject.SetActive(true);
-                }
+                tieText.gameObject.SetActive(true);
+                hitButton.interactable = false;
+                standButton.interactable = false;
             }
-
+            else if(dealer.dealersValue > 21 && player.value < 21)
+            {
+                wonText.gameObject.SetActive(true);
+                hitButton.interactable = false;
+                standButton.interactable = false;
+            }
+            else if (dealer.dealersValue < 21 && player.value > 21)
+            {
+                lostText.gameObject.SetActive(true);
+                hitButton.interactable = false;
+                standButton.interactable = false;
+            }
+            else if (playerDiff > dealerDiff)
+            {
+                lostText.gameObject.SetActive(true);
+                hitButton.interactable = false;
+                standButton.interactable = false;
+            }
+            else if (playerDiff < dealerDiff)
+            {
+                wonText.gameObject.SetActive(true);
+                hitButton.interactable = false;
+                standButton.interactable = false;
+            }
         }
     }
 
@@ -134,6 +154,10 @@ public class GameManager : MonoBehaviour
     public void PlayGame()
     {
         dealer.hiddenCard.gameObject.SetActive(true);
+
+        hitButton.interactable = true;
+        standButton.interactable = true;
+        nextRoundButton.interactable = false;
 
         for (int i = 0; i < 2; i++)
         {

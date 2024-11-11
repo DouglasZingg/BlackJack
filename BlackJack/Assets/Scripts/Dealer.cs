@@ -29,8 +29,11 @@ public class Dealer : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (canNowPlay == true)
+        {
+            DealerTurn();
+        }
         deckValue.text = dealersValue.ToString();
-        DealerTurn();
     }
 
     public void Hit()
@@ -49,7 +52,6 @@ public class Dealer : MonoBehaviour
                     randCard.hasBeenPlayed = false;
                     availableDealerCardSlots[i] = false;
                     dealersHand.Add(randCard);
-                    dealersValue += randCard.cardValue;
                     gameManager.deck.Remove(randCard);
                     return;
                 }
@@ -59,22 +61,48 @@ public class Dealer : MonoBehaviour
 
     public void DealerTurn()
     {
-        if (canNowPlay == true)
+        CalculateValue();
+
+
+        hiddenCard.gameObject.SetActive(false);
+
+        if (dealersValue < 17)
         {
-            hiddenCard.gameObject.SetActive(false);
-            
-            if (dealersValue < 15)
+            Hit();
+            if (dealersValue > 21)
             {
-                Hit();
-                if(dealersValue > 21)
+                instantLost = true;
+            }
+        }
+        else
+        {
+            dealersValue = 0;
+            CalculateValue();
+            canNowPlay = false;
+            turndone = true;
+        }
+
+    }
+
+    public void CalculateValue()
+    {
+        for (int i = 0; i < dealersHand.Count; i++)
+        {
+            if (dealersHand[i].isAce == true)
+            {
+                if (dealersValue + 11 > 21)
                 {
-                    instantLost = true;
+                    dealersValue += dealersHand[i].cardValue;
+                }
+                else
+                {
+                    dealersValue += dealersHand[i].cardValue;
+                    dealersValue += 10;
                 }
             }
             else
             {
-                canNowPlay = false;
-                turndone = true;
+                dealersValue += dealersHand[i].cardValue;
             }
         }
     }
