@@ -4245,7 +4245,6 @@ MonoBehaviour:
   hiddenCard: {fileID: 552290306}
   canNowPlay: 0
   turndone: 0
-  instantLost: 0
   dealersValue: 0
   deckValue: {fileID: 933385596}
 --- !u!1 &1052996106
@@ -4586,6 +4585,10 @@ PrefabInstance:
     - target: {fileID: 6938306663204554612, guid: 588b6e402c5e4724e846e251ba78f1af, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7864886865654288048, guid: 588b6e402c5e4724e846e251ba78f1af, type: 3}
+      propertyPath: cardValue
+      value: 11
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -7105,6 +7108,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5609675103325128528, guid: aff8dfc843e05b84db2d3e57d38baac8, type: 3}
+      propertyPath: cardValue
+      value: 11
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -7439,6 +7446,10 @@ PrefabInstance:
     - target: {fileID: 112657573782161536, guid: fbf43220850c2cd499c022975186871f, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3662964176503615051, guid: fbf43220850c2cd499c022975186871f, type: 3}
+      propertyPath: cardValue
+      value: 11
       objectReference: {fileID: 0}
     - target: {fileID: 3963972890530576815, guid: fbf43220850c2cd499c022975186871f, type: 3}
       propertyPath: m_Name
@@ -7805,6 +7816,10 @@ PrefabInstance:
     - target: {fileID: 1468365853102581144, guid: 3ffafeda853471941b8094db120f51a5, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8150964385960021848, guid: 3ffafeda853471941b8094db120f51a5, type: 3}
+      propertyPath: cardValue
+      value: 11
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -9479,6 +9494,10 @@ PrefabInstance:
       propertyPath: startPile
       value: 
       objectReference: {fileID: 1319215048}
+    - target: {fileID: 2735470396800677004, guid: 501533070e2672f40af090449fd315d4, type: 3}
+      propertyPath: playButton
+      value: 
+      objectReference: {fileID: 1782472638}
     - target: {fileID: 2735470396800677004, guid: 501533070e2672f40af090449fd315d4, type: 3}
       propertyPath: discardPile
       value: 

@@ -14,7 +14,6 @@ public class Dealer : MonoBehaviour
 
     public bool canNowPlay = false;
     public bool turndone = false;
-    public bool instantLost = false;
 
     public int dealersValue = 0;
 
@@ -69,10 +68,6 @@ public class Dealer : MonoBehaviour
         if (dealersValue < 17)
         {
             Hit();
-            if (dealersValue > 21)
-            {
-                instantLost = true;
-            }
         }
         else
         {
@@ -86,24 +81,58 @@ public class Dealer : MonoBehaviour
 
     public void CalculateValue()
     {
+        //for (int i = 0; i < dealersHand.Count; i++)
+        //{
+        //    if (dealersHand[i].isAce == true)
+        //    {
+        //        if (dealersValue + 11 > 21)
+        //        {
+        //            dealersValue += dealersHand[i].cardValue;
+        //        }
+        //        else
+        //        {
+        //            dealersValue += dealersHand[i].cardValue;
+        //            dealersValue += 10;
+        //        }
+        //    }
+        //    else
+        //    {
+        //        dealersValue += dealersHand[i].cardValue;
+        //    }
+        //}
+
+        int aceCount = 0;
         for (int i = 0; i < dealersHand.Count; i++)
         {
+            //if(playersHand[i].isAce == true)
+            //{
+            //    if(value + 11 > 21)
+            //    {
+            //        value += playersHand[i].cardValue;
+            //    }
+            //    else
+            //    {
+            //        value += playersHand[i].cardValue;
+            //        value += 10;
+            //    }
+            //}
+            //else
+            //{
+            //    value += playersHand[i].cardValue;
+            //}
+
             if (dealersHand[i].isAce == true)
             {
-                if (dealersValue + 11 > 21)
-                {
-                    dealersValue += dealersHand[i].cardValue;
-                }
-                else
-                {
-                    dealersValue += dealersHand[i].cardValue;
-                    dealersValue += 10;
-                }
+                aceCount++;
             }
-            else
-            {
-                dealersValue += dealersHand[i].cardValue;
-            }
+
+            dealersValue += dealersHand[i].cardValue;
+        }
+
+        if (dealersValue > 21 && aceCount > 0)
+        {
+            aceCount--;
+            dealersValue -= 10;
         }
     }
 }

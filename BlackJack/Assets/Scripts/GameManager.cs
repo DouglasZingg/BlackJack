@@ -26,6 +26,7 @@ public class GameManager : MonoBehaviour
     public Button hitButton;
     public Button nextRoundButton;
     public Button standButton;
+    public Button playButton;
 
     // Start is called before the first frame update
     void Start()
@@ -55,7 +56,13 @@ public class GameManager : MonoBehaviour
                 hitButton.interactable = false;
                 standButton.interactable = false;
             }
-            else if(dealer.dealersValue == player.value/* && player.value < 21*/)
+            else if (dealer.dealersValue == player.value && player.value < 21)
+            {
+                tieText.gameObject.SetActive(true);
+                hitButton.interactable = false;
+                standButton.interactable = false;
+            }
+            else if (dealer.dealersValue == player.value && player.value == 21)
             {
                 tieText.gameObject.SetActive(true);
                 hitButton.interactable = false;
@@ -68,6 +75,12 @@ public class GameManager : MonoBehaviour
                 standButton.interactable = false;
             }
             else if (dealer.dealersValue < 21 && player.value > 21)
+            {
+                lostText.gameObject.SetActive(true);
+                hitButton.interactable = false;
+                standButton.interactable = false;
+            }
+            else if (dealer.dealersValue > 21 && player.value > 21)
             {
                 lostText.gameObject.SetActive(true);
                 hitButton.interactable = false;
@@ -111,7 +124,6 @@ public class GameManager : MonoBehaviour
         player.endTurn = false;
         dealer.turndone = false;
         player.instantLost = false;
-        dealer.instantLost = false;
 
         for (int i = 0; i < player.playersHand.Count; i++)
         {
@@ -144,6 +156,7 @@ public class GameManager : MonoBehaviour
         if (deck.Count < 10)
         {
             ResetGame();
+            PlayGame();
         }
         else
         {
@@ -158,6 +171,7 @@ public class GameManager : MonoBehaviour
         hitButton.interactable = true;
         standButton.interactable = true;
         nextRoundButton.interactable = false;
+        playButton.interactable = false;
 
         for (int i = 0; i < 2; i++)
         {

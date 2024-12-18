@@ -60,24 +60,21 @@ public class Player : MonoBehaviour
 
     public void CalculateValue()
     {
+        int aceCount = 0;
         for (int i = 0; i < playersHand.Count; i++)
         {
-            if(playersHand[i].isAce == true)
+            if (playersHand[i].isAce == true)
             {
-                if(value + 11 > 21)
-                {
-                    value += playersHand[i].cardValue;
-                }
-                else
-                {
-                    value += playersHand[i].cardValue;
-                    value += 10;
-                }
+                aceCount++;
             }
-            else
-            {
-                value += playersHand[i].cardValue;
-            }
+
+            value += playersHand[i].cardValue;
+        }
+
+        if (value > 21 && aceCount > 0)
+        {
+            aceCount--;
+            value -= 10;
         }
     }
 }
