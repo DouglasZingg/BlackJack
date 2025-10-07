@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -5,26 +6,34 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    public List<Card> playersHand = new List<Card>();
+    //public List<Card> originalHand = new List<Card>();
+    //public List<Card> splitHand = new List<Card>();
     public bool[] availablePlayerCardSlots;
     public Transform[] playerCardSlots;
     public GameManager gameManager;
     public Dealer dealer;
     public TextMeshProUGUI deckValue;
-    public int value;
+    //public int value;
     public bool endTurn = false;
-    public bool instantLost = false;
+    public bool split = false;
+    //public bool instantLost = false;
+
+
+    public Hand firstHand = new Hand();
+    public Hand splitHand = new Hand();
 
     // Start is called before the first frame update
     void Start()
     {
-        
+        firstHand.cards = new List<Card>();
+        splitHand.cards = new List<Card>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        deckValue.text = value.ToString();
+        firstHand.CalculateValue();
+        deckValue.text = firstHand.score.ToString();
     }
 
     public void Hit()
@@ -37,12 +46,11 @@ public class Player : MonoBehaviour
             {
                 if (availablePlayerCardSlots[i] == true)
                 {
-                    randCard.gameObject.SetActive(true);
                     randCard.handIndex = i;
                     randCard.transform.position = playerCardSlots[i].position;
                     randCard.hasBeenPlayed = false;
                     availablePlayerCardSlots[i] = false;
-                    playersHand.Add(randCard);
+                    firstHand.cards.Add(randCard);
                     gameManager.deck.Remove(randCard);
                     return;
                 }
@@ -52,29 +60,15 @@ public class Player : MonoBehaviour
 
     public void Stand()
     {
-        CalculateValue();
-        dealer.canNowPlay = true;
+        if (splitHand.cards.Count > 0)
+        {
+            split = true;
+        }
+        else
+        {
+            dealer.canNowPlay = true;
+        }
+
         endTurn = true;
-        gameManager.nextRoundButton.interactable = true;
-    }
-
-    public void CalculateValue()
-    {
-        int aceCount = 0;
-        for (int i = 0; i < playersHand.Count; i++)
-        {
-            if (playersHand[i].isAce == true)
-            {
-                aceCount++;
-            }
-
-            value += playersHand[i].cardValue;
-        }
-
-        if (value > 21 && aceCount > 0)
-        {
-            aceCount--;
-            value -= 10;
-        }
     }
 }

@@ -18,6 +18,7 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI tieText;
 
     public Player player;
+
     public Dealer dealer;
 
     public GameObject startPile;
@@ -27,6 +28,9 @@ public class GameManager : MonoBehaviour
     public Button nextRoundButton;
     public Button standButton;
     public Button playButton;
+    public Button splitButton;
+
+    public Transform splitCardPosition;
 
     // Start is called before the first frame update
     void Start()
@@ -34,71 +38,43 @@ public class GameManager : MonoBehaviour
 
     }
 
+    //private bool hasLost = false;
+    //private bool hasWon = false;
+
     // Update is called once per frame
     void Update()
     {
         deckSize.text = deck.Count.ToString();
 
-        if (player.endTurn == true && dealer.turndone == true)
+        if (player.endTurn == true && dealer.endTurn == true)
         {
-            int playerDiff = 21 - player.value;
-            int dealerDiff = 21 - dealer.dealersValue;
-
-            if (player.value == 21 && dealer.dealersValue != 21)
-            {
-                wonText.gameObject.SetActive(true);
-                hitButton.interactable = false;
-                standButton.interactable = false;
-            }
-            else if (dealer.dealersValue == 21 && player.value != 21)
-            {
-                lostText.gameObject.SetActive(true);
-                hitButton.interactable = false;
-                standButton.interactable = false;
-            }
-            else if (dealer.dealersValue == player.value && player.value < 21)
-            {
-                tieText.gameObject.SetActive(true);
-                hitButton.interactable = false;
-                standButton.interactable = false;
-            }
-            else if (dealer.dealersValue == player.value && player.value == 21)
-            {
-                tieText.gameObject.SetActive(true);
-                hitButton.interactable = false;
-                standButton.interactable = false;
-            }
-            else if(dealer.dealersValue > 21 && player.value < 21)
-            {
-                wonText.gameObject.SetActive(true);
-                hitButton.interactable = false;
-                standButton.interactable = false;
-            }
-            else if (dealer.dealersValue < 21 && player.value > 21)
-            {
-                lostText.gameObject.SetActive(true);
-                hitButton.interactable = false;
-                standButton.interactable = false;
-            }
-            else if (dealer.dealersValue > 21 && player.value > 21)
-            {
-                lostText.gameObject.SetActive(true);
-                hitButton.interactable = false;
-                standButton.interactable = false;
-            }
-            else if (playerDiff > dealerDiff)
-            {
-                lostText.gameObject.SetActive(true);
-                hitButton.interactable = false;
-                standButton.interactable = false;
-            }
-            else if (playerDiff < dealerDiff)
-            {
-                wonText.gameObject.SetActive(true);
-                hitButton.interactable = false;
-                standButton.interactable = false;
-            }
+            EndRound();
         }
+    }
+
+    IEnumerator HandleLoss()
+    {
+        lostText.gameObject.SetActive(true);
+        yield return new WaitForSeconds(2f); // show text for 2 seconds
+        lostText.gameObject.SetActive(false);
+        Discard();
+        //hasLost = false; // allow new rounds to trigger again if needed
+    }
+    IEnumerator HandleWon()
+    {
+        wonText.gameObject.SetActive(true);
+        yield return new WaitForSeconds(2f); // show text for 2 seconds
+        wonText.gameObject.SetActive(false);
+        Discard();
+        //hasWon = false; // allow new rounds to trigger again if needed
+    }
+    IEnumerator HandleTie()
+    {
+        tieText.gameObject.SetActive(true);
+        yield return new WaitForSeconds(2f); // show text for 2 seconds
+        tieText.gameObject.SetActive(false);
+        Discard();
+        //hasWon = false; // allow new rounds to trigger again if needed
     }
 
     public void ResetGame()
@@ -111,52 +87,53 @@ public class GameManager : MonoBehaviour
                 card.transform.position = startPile.transform.position;
             }
             discardDeck.Clear();
-            player.playersHand.Clear();
-            dealer.dealersHand.Clear();
+            player.firstHand.cards.Clear();
+            dealer.dealerHand.cards.Clear();
         }
     }
 
     public void Discard()
     {
-        lostText.gameObject.SetActive(false);
-        wonText.gameObject.SetActive(false);
-        tieText.gameObject.SetActive(false);
-        player.endTurn = false;
-        dealer.turndone = false;
-        player.instantLost = false;
-
-        for (int i = 0; i < player.playersHand.Count; i++)
+        for (int i = 0; i < player.firstHand.cards.Count; i++)
         {
-            if (player.playersHand[i].hasBeenPlayed == false)
+            if (player.firstHand.cards[i].hasBeenPlayed == false)
             {
-                player.playersHand[i].hasBeenPlayed = true;
+                player.firstHand.cards[i].hasBeenPlayed = true;
                 player.availablePlayerCardSlots[i] = true;
-                player.playersHand[i].transform.position = discardPile.transform.position;
-                discardDeck.Add(player.playersHand[i]);
+                player.firstHand.cards[i].transform.position = discardPile.transform.position;
+                discardDeck.Add(player.firstHand.cards[i]);
             }
         }
 
-        for (int i = 0; i < dealer.dealersHand.Count; i++)
+        for (int i = 0; i < dealer.dealerHand.cards.Count; i++)
         {
-            if (dealer.dealersHand[i].hasBeenPlayed == false)
+            if (dealer.dealerHand.cards[i].hasBeenPlayed == false)
             {
-                dealer.dealersHand[i].hasBeenPlayed = true;
+                dealer.dealerHand.cards[i].hasBeenPlayed = true;
                 dealer.availableDealerCardSlots[i] = true;
-                dealer.dealersHand[i].transform.position = discardPile.transform.position;
-                discardDeck.Add(dealer.dealersHand[i]);
+                dealer.dealerHand.cards[i].transform.position = discardPile.transform.position;
+                discardDeck.Add(dealer.dealerHand.cards[i]);
             }
         }
 
-        player.playersHand.Clear();
-        player.value = 0;
-
-        dealer.dealersHand.Clear();
-        dealer.dealersValue = 0;
+        player.firstHand.cards.Clear();
+        player.firstHand.score = 0;
+        dealer.dealerHand.cards.Clear();
+        dealer.dealerHand.score = 0;
 
         if (deck.Count < 10)
         {
             ResetGame();
-            PlayGame();
+        }
+
+        if (player.split == true)
+        {
+            player.firstHand.cards.Add(player.splitHand.cards[0]);
+            player.splitHand.cards.RemoveAt(0);
+            player.availablePlayerCardSlots[0] = false;
+            player.firstHand.cards[0].transform.position = player.playerCardSlots[0].position;
+
+            player.split = false;
         }
         else
         {
@@ -178,5 +155,55 @@ public class GameManager : MonoBehaviour
             dealer.Hit();
             player.Hit();
         }
+        if (player.firstHand.cards[0].cardValue == player.firstHand.cards[1].cardValue)
+        {
+            splitButton.interactable = true;
+        }
+    }
+
+    public void Split()
+    {
+        player.splitHand.cards.Add(player.firstHand.cards[1]);
+        player.firstHand.cards.RemoveAt(1);
+        player.availablePlayerCardSlots[1] = true;
+
+        player.splitHand.cards[0].transform.position = splitCardPosition.position;
+
+        splitButton.interactable = false;
+    }
+
+    public void EndRound()
+    {
+        int playerScore = player.firstHand.score;
+        int dealerScore = dealer.dealerHand.score;
+
+        // Player busts ? Lose
+        if (playerScore > 21)
+        {
+            StartCoroutine(HandleLoss());
+        }
+        // Dealer busts ? Win
+        else if (dealerScore > 21)
+        {
+            StartCoroutine(HandleWon());
+        }
+        // Player wins with higher score
+        else if (playerScore > dealerScore)
+        {
+            StartCoroutine(HandleWon());
+        }
+        // Dealer wins with higher score
+        else if (dealerScore > playerScore)
+        {
+            StartCoroutine(HandleLoss());
+        }
+        // Tie (same score)
+        else
+        {
+            StartCoroutine(HandleTie());
+        }
+
+        player.endTurn = false;
+        dealer.endTurn = false;
     }
 }
