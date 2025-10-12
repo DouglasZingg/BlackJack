@@ -1,209 +1,335 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Xml.Serialization;
 using TMPro;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-    public List<Card> deck = new List<Card>();
-    public List<Card> discardDeck = new List<Card>();
+    [Header("Decks")]
+    public List<Card> deck = new();
+    public List<Card> discardDeck = new();
 
-    public TextMeshProUGUI deckSize;
-    public TextMeshProUGUI wonText;
-    public TextMeshProUGUI lostText;
-    public TextMeshProUGUI tieText;
-
+    [Header("References")]
     public Player player;
-
     public Dealer dealer;
-
     public GameObject startPile;
     public GameObject discardPile;
+    public GameObject scoreChart;
 
-    public Button hitButton;
-    public Button nextRoundButton;
-    public Button standButton;
-    public Button playButton;
-    public Button splitButton;
-
+    [Header("Split Settings")]
     public Transform splitCardPosition;
 
-    // Start is called before the first frame update
-    void Start()
-    {
+    [Header("Managers")]
+    public UIManager ui;
 
-    }
+    // --- State Tracking ---
+    public bool roundComplete = false;
+    private bool playingSplitHand = false;
+    private bool dealerAutoWin = false;
+    private int firstHandScore = 0;
 
-    //private bool hasLost = false;
-    //private bool hasWon = false;
-
-    // Update is called once per frame
+    // -------------------------------------------------------
     void Update()
     {
-        deckSize.text = deck.Count.ToString();
+        ui.SetDeckCount(deck.Count);
 
-        if (player.endTurn == true && dealer.endTurn == true)
+        // Only trigger auto end for standard (non-split) rounds
+        if (!player.split && player.endTurn && dealer.endTurn && roundComplete)
         {
+            ui.EnablePlayButton(false);
+            ui.EnablePlayButtons(false);
+            ui.EnableSplitButton(false);
+            roundComplete = false;
             EndRound();
         }
     }
 
-    IEnumerator HandleLoss()
+    // -------------------------------------------------------
+    public void PlayGame()
     {
-        lostText.gameObject.SetActive(true);
-        yield return new WaitForSeconds(2f); // show text for 2 seconds
-        lostText.gameObject.SetActive(false);
-        Discard();
-        //hasLost = false; // allow new rounds to trigger again if needed
+        ui.EnablePlayButton(false);
+        StartCoroutine(DealOpeningHands());
     }
-    IEnumerator HandleWon()
+
+    private IEnumerator DealOpeningHands()
     {
-        wonText.gameObject.SetActive(true);
-        yield return new WaitForSeconds(2f); // show text for 2 seconds
-        wonText.gameObject.SetActive(false);
-        Discard();
-        //hasWon = false; // allow new rounds to trigger again if needed
+        scoreChart.SetActive(true);
+
+        yield return StartCoroutine(dealer.HitWithDelay(0.5f));
+        yield return StartCoroutine(player.HitWithDelay(0.5f));
+        yield return StartCoroutine(dealer.HitWithDelay(0.5f));
+        yield return StartCoroutine(player.HitWithDelay(0.5f));
+
+        ui.EnablePlayButton(false);
+        dealer.dealerHand.CalculateValue();
+        if (dealer.dealerHand.cards[1].cardValue == 10 || dealer.dealerHand.cards[1].cardValue == 11)
+        {
+            yield return StartCoroutine(ui.ShowMessage(ui.messageText));
+            if (dealer.dealerHand.score == 21)
+            {
+                dealerAutoWin = true;
+                ui.EnablePlayButton(false);
+                ui.EnablePlayButtons(false);
+                ui.EnableSplitButton(false);
+                dealer.hiddenCard.transform.position = startPile.transform.position;
+                EndRound();
+            }
+        }
+
+        if (player.firstHand.cards.Count == 2 &&
+            player.firstHand.cards[0].cardValue == player.firstHand.cards[1].cardValue)
+        {
+            ui.EnableSplitButton(true);
+        }
+
+        dealer.canNowPlay = false;
+        dealer.endTurn = false;
+        player.endTurn = false;
+
+        ui.EnablePlayButtons(true);
+        ui.HideAllResults();
     }
-    IEnumerator HandleTie()
+
+    // -------------------------------------------------------
+    public void Split()
     {
-        tieText.gameObject.SetActive(true);
-        yield return new WaitForSeconds(2f); // show text for 2 seconds
-        tieText.gameObject.SetActive(false);
+        if (player.firstHand.cards.Count == 2 &&
+            player.firstHand.cards[0].cardValue == player.firstHand.cards[1].cardValue)
+        {
+            // Move one card to split hand
+            player.splitHand.cards.Add(player.firstHand.cards[1]);
+            player.firstHand.cards.RemoveAt(1);
+            player.availablePlayerCardSlots[1] = true;
+
+            // Move split card visually
+            player.splitHand.cards[0].transform.position = splitCardPosition.position;
+
+            player.split = true;
+
+            ui.EnableSplitButton(false);
+
+            StartCoroutine(SplitSetupSequence());
+        }
+    }
+
+    private IEnumerator SplitSetupSequence()
+    {
+        // Give a new card to the first hand only
+        yield return StartCoroutine(player.HitWithDelay(0.5f));
+
+        // Start playing first hand
+        yield return new WaitForSeconds(0.5f);
+        StartCoroutine(PlayFirstHand());
+    }
+
+    private IEnumerator PlayFirstHand()
+    {
+        Debug.Log(" Playing First Hand");
+        playingSplitHand = false;
+        player.split = true;
+        player.endTurn = false;
+
+        // Wait for player to stand or bust
+        yield return new WaitUntil(() => player.endTurn);
+
+        // Save first-hand score
+        firstHandScore = player.firstHand.score;
+        Debug.Log(" First hand finished with score: " + firstHandScore);
+
+        // Move to second hand
+        yield return new WaitForSeconds(0.5f);
+        ui.EnablePlayButtons(true); // allow input for next hand
+        StartCoroutine(PlaySecondHand());
+    }
+
+    private IEnumerator PlaySecondHand()
+    {
+        for (int i = 1; i < player.availablePlayerCardSlots.Length; i++)
+        {
+            player.availablePlayerCardSlots[i] = true;
+        }
+
+        Debug.Log(" Playing Second (Split) Hand");
+        playingSplitHand = true;
+        player.endTurn = false;
+        dealer.endTurn = false;
+
+        // Hide first-hand cards visually
+        foreach (Card c in player.firstHand.cards)
+            c.gameObject.SetActive(false);
+
+        // Move split card to player's main position
+        Card splitCard = player.splitHand.cards[0];
+        yield return StartCoroutine(splitCard.MoveToPosition(player.playerCardSlots[0].position, 0.5f));
+
+        // Transfer split card to first hand
+        player.firstHand.cards.Clear();
+        player.firstHand.cards.Add(splitCard);
+        player.splitHand.cards.Clear();
+
+        yield return StartCoroutine(player.HitWithDelay(0.5f));
+
+        // Wait until player finishes second hand
+        yield return new WaitUntil(() => player.endTurn);
+
+        Debug.Log(" Second hand finished with score: " + player.firstHand.score);
+
+        // Dealer plays after both hands are done
+        yield return new WaitForSeconds(0.5f);
+        yield return StartCoroutine(DealerAndCompare());
+    }
+
+    // -------------------------------------------------------
+    private IEnumerator DealerAndCompare()
+    {
+        Debug.Log(" Dealer's Turn");
+
+        dealer.endTurn = false;
+        dealer.canNowPlay = true;
+        yield return StartCoroutine(dealer.DealerTurnSequence());
+
+        int dealerScore = dealer.dealerHand.score;
+        int secondScore = player.firstHand.score;
+
+        // Compare results for both hands
+        yield return StartCoroutine(CheckHandOutcome(firstHandScore, dealerScore, "First Hand"));
+        yield return StartCoroutine(CheckHandOutcome(secondScore, dealerScore, "Second Hand"));
+
+        // Reset round
+        playingSplitHand = false;
+        player.split = false;
+
+        yield return new WaitForSeconds(1f);
         Discard();
-        //hasWon = false; // allow new rounds to trigger again if needed
+    }
+
+    // -------------------------------------------------------
+    public void EndRound()
+    {
+        ui.EnablePlayButton(false);
+        ui.EnablePlayButtons(false);
+        ui.EnableSplitButton(false);
+
+        int dealerScore = dealer.dealerHand.score;
+        int playerScore = player.firstHand.score;
+
+        StartCoroutine(CheckHandOutcome(playerScore, dealerScore, "Player Hand"));
+        player.endTurn = false;
+        dealer.endTurn = false;
+
+        StartCoroutine(RestartAfterDelay());
+    }
+
+    private IEnumerator RestartAfterDelay()
+    {
+        yield return new WaitForSeconds(2f);
+        Discard();
+    }
+
+    private IEnumerator CheckHandOutcome(int playerScore, int dealerScore, string handName)
+    {
+        scoreChart.SetActive(false);
+
+        if (playerScore > 21)
+        {
+            Debug.Log($"{handName}: Bust! You Lose.");
+            yield return StartCoroutine(ShowResult(ui.ShowLoss()));
+        }
+        else if (dealerAutoWin)
+        {
+            dealerAutoWin = false;
+            yield return StartCoroutine(ShowResult(ui.ShowLoss()));
+        }
+        else if(dealerAutoWin && player.playerAutoWin)
+        {
+            dealerAutoWin = false;
+            player.playerAutoWin = false;
+            Debug.Log($"{handName}: It's a Tie!");
+            yield return StartCoroutine(ShowResult(ui.ShowTie()));
+        }
+        else if (dealerScore > 21)
+        {
+            Debug.Log($"{handName}: Dealer Busts! You Win!");
+            yield return StartCoroutine(ShowResult(ui.ShowWin()));
+        }
+        else if (playerScore > dealerScore)
+        {
+            Debug.Log($"{handName}: You Win!");
+            yield return StartCoroutine(ShowResult(ui.ShowWin()));
+        }
+        else if (dealerScore > playerScore)
+        {
+            Debug.Log($"{handName}: You Lose!");
+            yield return StartCoroutine(ShowResult(ui.ShowLoss()));
+        }
+        else
+        {
+            Debug.Log($"{handName}: It's a Tie!");
+            yield return StartCoroutine(ShowResult(ui.ShowTie()));
+        }
+
+        yield return new WaitForSeconds(0.5f);
+    }
+
+    private IEnumerator ShowResult(IEnumerator resultRoutine)
+    {
+        yield return StartCoroutine(resultRoutine);
+        yield return new WaitForSeconds(0.5f);
+    }
+
+    // -------------------------------------------------------
+    public void Discard()
+    {
+        MoveCardsToDiscard(player.firstHand.cards, player.availablePlayerCardSlots);
+        MoveCardsToDiscard(dealer.dealerHand.cards, dealer.availableDealerCardSlots);
+
+        player.firstHand.score = 0;
+        dealer.dealerHand.score = 0;
+        dealer.hiddenCard.transform.position = startPile.transform.position;
+
+        if (deck.Count < 10)
+            ResetGame();
+
+        player.split = false;
+        player.splitHand.cards.Clear();
+        player.splitHand.score = 0;
+        playingSplitHand = false;
+
+        ui.EnablePlayButton(true);
+        ui.EnablePlayButtons(false);
+        ui.EnableSplitButton(false);
+    }
+
+    private void MoveCardsToDiscard(List<Card> cards, bool[] slotFlags)
+    {
+        for (int i = 0; i < cards.Count; i++)
+        {
+            Card card = cards[i];
+            if (!card.hasBeenPlayed)
+            {
+                card.hasBeenPlayed = true;
+                if (slotFlags != null && i < slotFlags.Length)
+                    slotFlags[i] = true;
+
+                card.transform.position = discardPile.transform.position;
+                discardDeck.Add(card);
+            }
+        }
+        cards.Clear();
     }
 
     public void ResetGame()
     {
-        if (discardDeck.Count >= 1)
-        {
-            foreach (Card card in discardDeck)
-            {
-                deck.Add(card);
-                card.transform.position = startPile.transform.position;
-            }
-            discardDeck.Clear();
-            player.firstHand.cards.Clear();
-            dealer.dealerHand.cards.Clear();
-        }
-    }
+        if (discardDeck.Count <= 0) return;
 
-    public void Discard()
-    {
-        for (int i = 0; i < player.firstHand.cards.Count; i++)
+        foreach (Card card in discardDeck)
         {
-            if (player.firstHand.cards[i].hasBeenPlayed == false)
-            {
-                player.firstHand.cards[i].hasBeenPlayed = true;
-                player.availablePlayerCardSlots[i] = true;
-                player.firstHand.cards[i].transform.position = discardPile.transform.position;
-                discardDeck.Add(player.firstHand.cards[i]);
-            }
+            deck.Add(card);
+            card.transform.position = startPile.transform.position;
         }
-
-        for (int i = 0; i < dealer.dealerHand.cards.Count; i++)
-        {
-            if (dealer.dealerHand.cards[i].hasBeenPlayed == false)
-            {
-                dealer.dealerHand.cards[i].hasBeenPlayed = true;
-                dealer.availableDealerCardSlots[i] = true;
-                dealer.dealerHand.cards[i].transform.position = discardPile.transform.position;
-                discardDeck.Add(dealer.dealerHand.cards[i]);
-            }
-        }
+        discardDeck.Clear();
 
         player.firstHand.cards.Clear();
-        player.firstHand.score = 0;
         dealer.dealerHand.cards.Clear();
-        dealer.dealerHand.score = 0;
-
-        if (deck.Count < 10)
-        {
-            ResetGame();
-        }
-
-        if (player.split == true)
-        {
-            player.firstHand.cards.Add(player.splitHand.cards[0]);
-            player.splitHand.cards.RemoveAt(0);
-            player.availablePlayerCardSlots[0] = false;
-            player.firstHand.cards[0].transform.position = player.playerCardSlots[0].position;
-
-            player.split = false;
-        }
-        else
-        {
-            PlayGame();
-        }
-    }
-
-    public void PlayGame()
-    {
-        dealer.hiddenCard.gameObject.SetActive(true);
-
-        hitButton.interactable = true;
-        standButton.interactable = true;
-        nextRoundButton.interactable = false;
-        playButton.interactable = false;
-
-        for (int i = 0; i < 2; i++)
-        {
-            dealer.Hit();
-            player.Hit();
-        }
-        if (player.firstHand.cards[0].cardValue == player.firstHand.cards[1].cardValue)
-        {
-            splitButton.interactable = true;
-        }
-    }
-
-    public void Split()
-    {
-        player.splitHand.cards.Add(player.firstHand.cards[1]);
-        player.firstHand.cards.RemoveAt(1);
-        player.availablePlayerCardSlots[1] = true;
-
-        player.splitHand.cards[0].transform.position = splitCardPosition.position;
-
-        splitButton.interactable = false;
-    }
-
-    public void EndRound()
-    {
-        int playerScore = player.firstHand.score;
-        int dealerScore = dealer.dealerHand.score;
-
-        // Player busts ? Lose
-        if (playerScore > 21)
-        {
-            StartCoroutine(HandleLoss());
-        }
-        // Dealer busts ? Win
-        else if (dealerScore > 21)
-        {
-            StartCoroutine(HandleWon());
-        }
-        // Player wins with higher score
-        else if (playerScore > dealerScore)
-        {
-            StartCoroutine(HandleWon());
-        }
-        // Dealer wins with higher score
-        else if (dealerScore > playerScore)
-        {
-            StartCoroutine(HandleLoss());
-        }
-        // Tie (same score)
-        else
-        {
-            StartCoroutine(HandleTie());
-        }
-
-        player.endTurn = false;
-        dealer.endTurn = false;
     }
 }
