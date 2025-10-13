@@ -12,12 +12,15 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI tieText;
     public TextMeshProUGUI splitText;
     public TextMeshProUGUI messageText;
+    public GameObject betUI;
 
     [Header("Buttons")]
     public Button hitButton;
     public Button standButton;
     public Button splitButton;
     public Button playButton;
+
+    public BettingManager bet;
 
     // ----------------------------
 
@@ -43,12 +46,30 @@ public class UIManager : MonoBehaviour
         splitButton.interactable = enabled;
     }
 
-    public IEnumerator ShowResult(TextMeshProUGUI text, float displayTime = 2f)
+    public IEnumerator ShowWinResult(TextMeshProUGUI text, int bet, float displayTime = 2f)
     {
+        text.text = "You win $" + bet * 2 + "!";
         text.gameObject.SetActive(true);
         yield return new WaitForSeconds(displayTime);
         text.gameObject.SetActive(false);
     }
+
+    public IEnumerator ShowLoseResult(TextMeshProUGUI text, int bet, float displayTime = 2f)
+    {
+        text.text = "You lost $" + bet + "!";
+        text.gameObject.SetActive(true);
+        yield return new WaitForSeconds(displayTime);
+        text.gameObject.SetActive(false);
+    }
+
+    public IEnumerator ShowTieResult(TextMeshProUGUI text, int bet, float displayTime = 2f)
+    {
+        text.text = "Push!";
+        text.gameObject.SetActive(true);
+        yield return new WaitForSeconds(displayTime);
+        text.gameObject.SetActive(false);
+    }
+
     public IEnumerator ShowMessage(TextMeshProUGUI text, float displayTime = 2f)
     {
         text.gameObject.SetActive(true);
@@ -58,26 +79,17 @@ public class UIManager : MonoBehaviour
 
     public IEnumerator ShowWin()
     {
-        yield return ShowResult(wonText);
+        yield return ShowWinResult(wonText, bet.betAmount);
     }
 
     public IEnumerator ShowLoss()
     {
-        yield return ShowResult(lostText);
+        yield return ShowLoseResult(lostText, bet.betAmount);
     }
 
     public IEnumerator ShowTie()
     {
-        yield return ShowResult(tieText);
-    }
-    public IEnumerator ShowDealerAutpWIn()
-    {
-        yield return ShowResult(messageText);
-    }
-
-    public IEnumerator ShowSplit()
-    {
-        yield return ShowResult(splitText);
+        yield return ShowTieResult(tieText, bet.betAmount);
     }
 
     // Reset all result texts

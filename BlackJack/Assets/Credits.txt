@@ -1,0 +1,3 @@
+Card Assets - https://assetstore.unity.com/packages/2d/gui/2d-cards-game-art-pack-285314
+
+Font - https://assetstore.unity.com/packages/2d/fonts/boldpixels-332078

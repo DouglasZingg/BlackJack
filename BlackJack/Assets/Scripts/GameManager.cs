@@ -15,12 +15,14 @@ public class GameManager : MonoBehaviour
     public GameObject startPile;
     public GameObject discardPile;
     public GameObject scoreChart;
+    public GameObject gameOverScreen;
 
     [Header("Split Settings")]
     public Transform splitCardPosition;
 
     [Header("Managers")]
     public UIManager ui;
+    public BettingManager bet;
 
     // --- State Tracking ---
     public bool roundComplete = false;
@@ -42,12 +44,16 @@ public class GameManager : MonoBehaviour
             roundComplete = false;
             EndRound();
         }
+
+
     }
 
     // -------------------------------------------------------
     public void PlayGame()
     {
         ui.EnablePlayButton(false);
+        ui.betUI.SetActive(false);
+        bet.PlaceBet();
         StartCoroutine(DealOpeningHands());
     }
 
@@ -124,7 +130,6 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator PlayFirstHand()
     {
-        Debug.Log(" Playing First Hand");
         playingSplitHand = false;
         player.split = true;
         player.endTurn = false;
@@ -134,7 +139,6 @@ public class GameManager : MonoBehaviour
 
         // Save first-hand score
         firstHandScore = player.firstHand.score;
-        Debug.Log(" First hand finished with score: " + firstHandScore);
 
         // Move to second hand
         yield return new WaitForSeconds(0.5f);
@@ -149,7 +153,6 @@ public class GameManager : MonoBehaviour
             player.availablePlayerCardSlots[i] = true;
         }
 
-        Debug.Log(" Playing Second (Split) Hand");
         playingSplitHand = true;
         player.endTurn = false;
         dealer.endTurn = false;
@@ -172,7 +175,6 @@ public class GameManager : MonoBehaviour
         // Wait until player finishes second hand
         yield return new WaitUntil(() => player.endTurn);
 
-        Debug.Log(" Second hand finished with score: " + player.firstHand.score);
 
         // Dealer plays after both hands are done
         yield return new WaitForSeconds(0.5f);
@@ -182,7 +184,6 @@ public class GameManager : MonoBehaviour
     // -------------------------------------------------------
     private IEnumerator DealerAndCompare()
     {
-        Debug.Log(" Dealer's Turn");
 
         dealer.endTurn = false;
         dealer.canNowPlay = true;
@@ -232,39 +233,38 @@ public class GameManager : MonoBehaviour
 
         if (playerScore > 21)
         {
-            Debug.Log($"{handName}: Bust! You Lose.");
+            bet.SubtractBet(bet.betAmount);
             yield return StartCoroutine(ShowResult(ui.ShowLoss()));
         }
         else if (dealerAutoWin)
         {
             dealerAutoWin = false;
+            bet.SubtractBet(bet.betAmount);
             yield return StartCoroutine(ShowResult(ui.ShowLoss()));
         }
-        else if(dealerAutoWin && player.playerAutoWin)
+        else if (dealerAutoWin && player.playerAutoWin)
         {
             dealerAutoWin = false;
             player.playerAutoWin = false;
-            Debug.Log($"{handName}: It's a Tie!");
             yield return StartCoroutine(ShowResult(ui.ShowTie()));
         }
         else if (dealerScore > 21)
         {
-            Debug.Log($"{handName}: Dealer Busts! You Win!");
+            bet.AddWinnings(bet.betAmount * 2);
             yield return StartCoroutine(ShowResult(ui.ShowWin()));
         }
         else if (playerScore > dealerScore)
         {
-            Debug.Log($"{handName}: You Win!");
+            bet.AddWinnings(bet.betAmount * 2);
             yield return StartCoroutine(ShowResult(ui.ShowWin()));
         }
         else if (dealerScore > playerScore)
         {
-            Debug.Log($"{handName}: You Lose!");
+            bet.SubtractBet(bet.betAmount);
             yield return StartCoroutine(ShowResult(ui.ShowLoss()));
         }
         else
         {
-            Debug.Log($"{handName}: It's a Tie!");
             yield return StartCoroutine(ShowResult(ui.ShowTie()));
         }
 
@@ -288,16 +288,24 @@ public class GameManager : MonoBehaviour
         dealer.hiddenCard.transform.position = startPile.transform.position;
 
         if (deck.Count < 10)
-            ResetGame();
+            ResetDeck();
 
         player.split = false;
         player.splitHand.cards.Clear();
         player.splitHand.score = 0;
         playingSplitHand = false;
 
-        ui.EnablePlayButton(true);
-        ui.EnablePlayButtons(false);
-        ui.EnableSplitButton(false);
+        if (bet.playerBalance < 15)
+        {
+            gameOverScreen.SetActive(true);
+        }
+        else
+        {
+            ui.EnablePlayButton(true);
+            ui.EnablePlayButtons(false);
+            ui.EnableSplitButton(false);
+            ui.betUI.SetActive(true);
+        }
     }
 
     private void MoveCardsToDiscard(List<Card> cards, bool[] slotFlags)
@@ -318,7 +326,7 @@ public class GameManager : MonoBehaviour
         cards.Clear();
     }
 
-    public void ResetGame()
+    public void ResetDeck()
     {
         if (discardDeck.Count <= 0) return;
 
@@ -331,5 +339,13 @@ public class GameManager : MonoBehaviour
 
         player.firstHand.cards.Clear();
         dealer.dealerHand.cards.Clear();
+    }
+
+    public void ResetGame()
+    {
+        bet.ResetMoney();
+        ResetDeck();
+        Discard();
+        gameOverScreen.SetActive(false);
     }
 }
