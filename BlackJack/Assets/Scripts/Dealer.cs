@@ -98,16 +98,21 @@ public class Dealer : MonoBehaviour
     }
     public IEnumerator DealerTurnSequence()
     {
+        gameManager.ui.EnablePlayButtons(false);
+
         hiddenCard.transform.position = gameManager.startPile.transform.position;
         yield return new WaitForSeconds(2f);
         dealerHand.CalculateValue();
-        while (dealerHand.score < 17 || dealerHand.cards.Count == 5)
+        int hitCount = 0;
+        while (dealerHand.score < 17 && hitCount < 5)
         {
             yield return StartCoroutine(HitWithDelay(1f));
             dealerHand.CalculateValue();
+            hitCount++;
             UpdateDeckValueText(); //  keep it live-updating
         }
         endTurn = true;
         canNowPlay = false;
+        gameManager.doublingDown = true;
     }
 }

@@ -18,7 +18,7 @@ public class BettingManager : MonoBehaviour
     void Update()
     {
         betAmountText.text = "$" + betAmount.ToString();
-
+        playerBalanceText.text = "$" + playerBalance.ToString();
         if (betAmount > playerBalance)
         {
             placeBetButton.interactable = false;
@@ -59,7 +59,6 @@ public class BettingManager : MonoBehaviour
 
     public void PlaceBet()
     {
-        playerBalance -= betAmount;
         playerBalanceText.text = "$" + playerBalance.ToString();
         betAmountText.text = "$15";
     }

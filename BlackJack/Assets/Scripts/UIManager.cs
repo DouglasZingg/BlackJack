@@ -19,6 +19,7 @@ public class UIManager : MonoBehaviour
     public Button standButton;
     public Button splitButton;
     public Button playButton;
+    public Button doubleButton;
 
     public BettingManager bet;
 
@@ -34,6 +35,7 @@ public class UIManager : MonoBehaviour
     {
         hitButton.interactable = enabled;
         standButton.interactable = enabled;
+        doubleButton.interactable = enabled;
     }
 
     public void EnablePlayButton(bool enabled)
@@ -48,7 +50,7 @@ public class UIManager : MonoBehaviour
 
     public IEnumerator ShowWinResult(TextMeshProUGUI text, int bet, float displayTime = 2f)
     {
-        text.text = "You win $" + bet * 2 + "!";
+        text.text = "You win $" + bet + "!";
         text.gameObject.SetActive(true);
         yield return new WaitForSeconds(displayTime);
         text.gameObject.SetActive(false);
