@@ -2229,9 +2229,9 @@ MonoBehaviour:
   - {fileID: 444470044}
   gameManager: {fileID: 1208744128}
   hiddenCard: {fileID: 67674598}
+  deckValue: {fileID: 297148125}
   canNowPlay: 0
   endTurn: 0
-  deckValue: {fileID: 297148125}
 --- !u!1 &444470043
 GameObject:
   m_ObjectHideFlags: 0
@@ -4587,6 +4587,8 @@ MonoBehaviour:
   deckValue: {fileID: 393893102}
   endTurn: 0
   split: 0
+  firstHandDone: 0
+  secondHandDone: 0
   playerAutoWin: 0
 --- !u!1 &860461913
 GameObject:
@@ -10077,7 +10079,6 @@ MonoBehaviour:
   wonText: {fileID: 243392019}
   lostText: {fileID: 1547678121}
   tieText: {fileID: 677838783}
-  splitText: {fileID: 1668593167}
   messageText: {fileID: 411572111}
   betUI: {fileID: 362282239}
   hitButton: {fileID: 1285599882}

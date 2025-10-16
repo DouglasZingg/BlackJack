@@ -5,122 +5,96 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    public bool[] availablePlayerCardSlots;
-    public Transform[] playerCardSlots;
-    public GameManager gameManager;
-    public Dealer dealer;
-    public TextMeshProUGUI deckValue;
-
-    public bool endTurn;
-    public bool split;
-    public bool playerAutoWin;
-    public bool firstHandDone;
-    public bool secondHandDone;
-
+    [Header("Hands")]
     public Hand firstHand = new();
     public Hand splitHand = new();
 
+    [Header("Display Helpers")]
+    public bool[] availablePlayerCardSlots;
+    public Transform[] playerCardSlots;
+
+    [Header("References")]
+    public GameManager gameManager;
+    public Dealer dealer;
+
+    [Header("UI Elements")]
+    [SerializeField]
+    private TextMeshProUGUI deckValue;
+
+    [Header("State Tracking")]
+    public bool endTurn;
+    public bool split;
+    public bool firstHandDone;
+    public bool secondHandDone;
+    public bool playerAutoWin;
+
     void Start()
     {
+        // Initialize hands
         firstHand.cards = new List<Card>();
         splitHand.cards = new List<Card>();
     }
 
     void Update()
     {
+        // Update the displayed value of the current hand
         firstHand.CalculateValue();
         deckValue.text = firstHand.score.ToString();
     }
 
-    // -------------------------------------
     public void HitButton()
     {
+        //Disables double button
         gameManager.ui.doubleButton.interactable = false;
+
+        //Delayed hit for better UX
         StartCoroutine(HitWithDelay(0.5f));
     }
 
     public IEnumerator HitWithDelay(float delay)
     {
+        //Deck size check
         if (gameManager.deck.Count < 1)
             yield break;
 
+        //Draw a random card and find an available slot
         var card = DrawRandomCard();
         int slotIndex = GetAvailableSlotIndex();
 
+        //If no slots are available, exit
         if (slotIndex == -1)
             yield break;
 
+        //Assign card to hand and update states
         availablePlayerCardSlots[slotIndex] = false;
         firstHand.cards.Add(card);
 
+        //Update card properties and animate movement
         card.handIndex = slotIndex;
         card.hasBeenPlayed = false;
         card.gameObject.SetActive(true);
         gameManager.deck.Remove(card);
-
         yield return StartCoroutine(card.MoveToPosition(playerCardSlots[slotIndex].position, 0.5f));
 
+        //Recalculate hand value and check for bust or 5-cards
         firstHand.CalculateValue();
-
-        // -------------------------------------
-        //  MAIN SCORE CHECKS
-        // -------------------------------------
-
-        // Player bust (no split)
-        if (firstHand.score > 21 && split == false)
-        {
-            gameManager.ui.EnablePlayButton(false);
-            gameManager.ui.EnablePlayButtons(false);
-            gameManager.ui.EnableSplitButton(false);
-            endTurn = true;
-
-            gameManager.EndRound();
-        }
-        // Player hits 21 (auto win, no split)
-        else if (firstHand.score == 21 && split == false)
-        {
-            playerAutoWin = true;
-
-            gameManager.ui.EnablePlayButton(false);
-            gameManager.ui.EnablePlayButtons(false);
-            gameManager.ui.EnableSplitButton(false);
-            endTurn = true;
-
-            gameManager.EndRound();
-        }
-        // Split hand bust
-        else if (firstHand.score > 21 && split == true)
-        {
-            gameManager.ui.EnablePlayButton(false);
-            gameManager.ui.EnablePlayButtons(false);
-            gameManager.ui.EnableSplitButton(false);
-            endTurn = true;
-        }
-        // Split hand hits 21
-        else if (firstHand.score == 21 && split == true)
-        {
-            gameManager.ui.EnablePlayButton(false);
-            gameManager.ui.EnablePlayButtons(false);
-            gameManager.ui.EnableSplitButton(false);
-            endTurn = true;
-        }
-        // 5-card Charlie auto-stand
-        else if (firstHand.cards.Count == 5)
-        {
+        if (firstHand.score >= 21 || firstHand.cards.Count == 5)
             Stand();
-        }
 
+        //Delay for better UX
         yield return new WaitForSeconds(delay);
     }
 
     private Card DrawRandomCard()
     {
+        //Draws a random card from the deck
         int index = Random.Range(0, gameManager.deck.Count);
         return gameManager.deck[index];
     }
 
     private int GetAvailableSlotIndex()
     {
+        //Finds the first available slot
         for (int i = 0; i < availablePlayerCardSlots.Length; i++)
         {
             if (availablePlayerCardSlots[i])
@@ -129,9 +103,9 @@ public class Player : MonoBehaviour
         return -1;
     }
 
-    // -------------------------------------
     public void Stand()
     {
+        //Disable buttons
         gameManager.ui.EnablePlayButton(false);
         gameManager.ui.EnablePlayButtons(false);
         gameManager.ui.EnableSplitButton(false);
@@ -141,9 +115,15 @@ public class Player : MonoBehaviour
             // Split hands end separately
             endTurn = true;
         }
+        else if (firstHand.score > 21)
+        {
+            // Player busts, round ends
+            endTurn = true;
+            gameManager.EndRound();
+        }
         else
         {
-            // Normal hand ends round
+            // Normal hand and 21 ends round
             gameManager.roundComplete = true;
             endTurn = true;
             dealer.canNowPlay = true;
