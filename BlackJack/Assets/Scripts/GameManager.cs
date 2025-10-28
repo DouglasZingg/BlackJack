@@ -96,6 +96,9 @@ public class GameManager : MonoBehaviour
         yield return StartCoroutine(dealer.HitWithDelay(0.5f));
         yield return StartCoroutine(player.HitWithDelay(0.5f));
 
+        // Dealer checks for blackjack
+        dealerIsChecking = true;
+
         dealer.dealerHand.CalculateValue();
         if (dealer.dealerHand.cards[1].cardValue == 10 || dealer.dealerHand.cards[1].cardValue == 11)
         {
@@ -107,24 +110,40 @@ public class GameManager : MonoBehaviour
                 // Dealer has blackjack
                 dealerAutoWin = true;
 
+                ui.EnablePlayButton(false);
+                ui.EnablePlayButtons(false);
+                ui.EnableSplitButton(false);
+
                 // Reveal dealer's hidden card
                 dealer.hiddenCard.transform.position = startPile.transform.position;
+
+                // End round immediately
+                player.endTurn = true;
+                dealer.endTurn = true;
+
+                // Check outcome
+                yield return StartCoroutine(CheckHandOutcome(player.firstHand.score, dealer.dealerHand.score));
+
+                // Restart after a short delay
+                StartCoroutine(RestartAfterDelay());
+
+                // Stops further play
+                yield break;
             }
+
         }
+
+        dealerIsChecking = false;
 
         // Check if player has blackjack
-        player.firstHand.CalculateValue();
         if (player.firstHand.score == 21)
-        {
-            //Player has blackjack
-            player.playerAutoWin = true;
-        }
-
-        if (dealerAutoWin || player.playerAutoWin)
         {
             ui.EnablePlayButton(false);
             ui.EnablePlayButtons(false);
             ui.EnableSplitButton(false);
+
+            //Player has blackjack
+            player.playerAutoWin = true;
 
             // End round immediately
             player.endTurn = true;
@@ -336,19 +355,27 @@ public class GameManager : MonoBehaviour
             bet.SubtractBet(bet.betAmount);
             yield return StartCoroutine(ShowResult(ui.ShowLoss()));
         }
-        // Player and Dealer both have Auto Win conditions
+        // Player and Dealer both have Auto Win conditions (Blackjack tie)
         else if (dealerAutoWin && player.playerAutoWin)
         {
             dealerAutoWin = false;
             player.playerAutoWin = false;
             yield return StartCoroutine(ShowResult(ui.ShowTie()));
         }
-        // Dealer has Auto Win condition
+        // Dealer has Auto Win condition (Dealer Blackjack)
         else if (dealerAutoWin)
         {
             bet.SubtractBet(bet.betAmount);
             yield return StartCoroutine(ShowResult(ui.ShowLoss()));
             dealerAutoWin = false;
+        }
+        // Player has Auto Win condition (Player Blackjack) - explicit handling
+        else if (player.playerAutoWin)
+        {
+            // Award player the win for blackjack and clear the flag
+            bet.AddWinnings(bet.betAmount);
+            yield return StartCoroutine(ShowResult(ui.ShowWin()));
+            player.playerAutoWin = false;
         }
         // Dealer Busts
         else if (dealerScore > 21)
@@ -356,19 +383,19 @@ public class GameManager : MonoBehaviour
             bet.AddWinnings(bet.betAmount);
             yield return StartCoroutine(ShowResult(ui.ShowWin()));
         }
-        // Player has a better score then Dealer
+        // Player has a better score than Dealer
         else if (playerScore > dealerScore)
         {
             bet.AddWinnings(bet.betAmount);
             yield return StartCoroutine(ShowResult(ui.ShowWin()));
         }
-        // Dealer has a better score then Player
+        // Dealer has a better score than Player
         else if (dealerScore > playerScore)
         {
             bet.SubtractBet(bet.betAmount);
             yield return StartCoroutine(ShowResult(ui.ShowLoss()));
         }
-        // Player and Dealer have the same score
+        // Player and Dealer have the same score (push)
         else
         {
             yield return StartCoroutine(ShowResult(ui.ShowTie()));
@@ -376,6 +403,7 @@ public class GameManager : MonoBehaviour
 
         yield return new WaitForSeconds(0.5f);
     }
+
 
     // Helper to show result with a slight delay
     private IEnumerator ShowResult(IEnumerator resultRoutine)
