@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -14,7 +15,9 @@ public class GameManager : MonoBehaviour
     public GameObject startPile;
     public GameObject discardPile;
     public GameObject scoreChart;
-    public GameObject gameOverScreen;
+    public GameObject cards;
+    public GameObject cardBack;
+    public GameObject gamplayButtons;
 
     [Header("Split Settings")]
     public Transform splitCardPosition;
@@ -30,6 +33,10 @@ public class GameManager : MonoBehaviour
     public bool dealerIsChecking = false;
     public bool notDoublingDown = true;
     public bool notSplit = true;
+
+    [Header("Game Screens")]
+    public GameObject playScreen;
+    public GameObject gameOverScreen;
 
     void Update()
     {
@@ -53,10 +60,25 @@ public class GameManager : MonoBehaviour
 
     public void PlayGame()
     {
-        // Start a new round
-        ui.EnablePlayButton(false);
+        // Hides bet UI and play screen
+        ui.betUI.SetActive(false);
+        playScreen.SetActive(false);
 
-        // Hides bet UI
+        // Shows gameplay elements
+        ui.deckSizeText.gameObject.SetActive(true);
+        dealer.hiddenCard.gameObject.SetActive(true);
+        cards.SetActive(true);
+        cardBack.SetActive(true);
+        gamplayButtons.SetActive(true);
+        bet.playerBalanceText.gameObject.SetActive(true);
+
+        // Deals Cards and checks auto win conditions
+        StartCoroutine(DealOpeningHands());
+    }
+
+    public void NextRound()
+    {
+        ui.nextRoundButton.gameObject.SetActive(false);
         ui.betUI.SetActive(false);
 
         // Deals Cards and checks auto win conditions
@@ -74,9 +96,6 @@ public class GameManager : MonoBehaviour
         yield return StartCoroutine(dealer.HitWithDelay(0.5f));
         yield return StartCoroutine(player.HitWithDelay(0.5f));
 
-        // Dealer checks for blackjack
-        dealerIsChecking = true;
-
         dealer.dealerHand.CalculateValue();
         if (dealer.dealerHand.cards[1].cardValue == 10 || dealer.dealerHand.cards[1].cardValue == 11)
         {
@@ -88,40 +107,24 @@ public class GameManager : MonoBehaviour
                 // Dealer has blackjack
                 dealerAutoWin = true;
 
-                ui.EnablePlayButton(false);
-                ui.EnablePlayButtons(false);
-                ui.EnableSplitButton(false);
-
                 // Reveal dealer's hidden card
                 dealer.hiddenCard.transform.position = startPile.transform.position;
-
-                // End round immediately
-                player.endTurn = true;
-                dealer.endTurn = true;
-
-                // Check outcome
-                yield return StartCoroutine(CheckHandOutcome(player.firstHand.score, dealer.dealerHand.score));
-
-                // Restart after a short delay
-                StartCoroutine(RestartAfterDelay());
-
-                // Stops further play
-                yield break;
             }
-
         }
 
-        dealerIsChecking = false;
-
         // Check if player has blackjack
+        player.firstHand.CalculateValue();
         if (player.firstHand.score == 21)
+        {
+            //Player has blackjack
+            player.playerAutoWin = true;
+        }
+
+        if (dealerAutoWin || player.playerAutoWin)
         {
             ui.EnablePlayButton(false);
             ui.EnablePlayButtons(false);
             ui.EnableSplitButton(false);
-
-            //Player has blackjack
-            player.playerAutoWin = true;
 
             // End round immediately
             player.endTurn = true;
@@ -394,9 +397,15 @@ public class GameManager : MonoBehaviour
         dealer.dealerHand.score = 0;
         dealer.hiddenCard.transform.position = startPile.transform.position;
 
+        discardPile.SetActive(true);
+
         // Refill deck if running low
         if (deck.Count < 10)
+        {
+            discardPile.SetActive(false);
             ResetDeck();
+        }
+            
 
         // Reset split/double/round flags
         player.split = false;
@@ -415,6 +424,7 @@ public class GameManager : MonoBehaviour
             // Reset UI
             bet.betAmount = 15;
             ui.EnablePlayButton(true);
+            ui.nextRoundButton.gameObject.SetActive(true);
             ui.EnablePlayButtons(false);
             ui.EnableSplitButton(false);
             ui.betUI.SetActive(true);

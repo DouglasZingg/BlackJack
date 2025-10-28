@@ -1,12 +1,13 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
     [Header("UI Elements")]
-    public TextMeshProUGUI deckSize;
+    public TextMeshProUGUI deckSizeText;
     public TextMeshProUGUI wonText;
     public TextMeshProUGUI lostText;
     public TextMeshProUGUI tieText;
@@ -17,18 +18,24 @@ public class UIManager : MonoBehaviour
     public Button hitButton;
     public Button standButton;
     public Button splitButton;
-    public Button playButton;
+    public Button nextRoundButton;
     public Button doubleButton;
+    public Button exitButton;
+    public Button resetButton;
+    public Button backButton;
 
     [Header("References")]
     [SerializeField]
     private BettingManager bet;
+    public GameManager gameManager;
+    public GameObject howToPlayScreen;
+    public GameObject creditsScreen;
 
     // Set the deck count display
     public void SetDeckCount(int count)
     {
-        if (deckSize != null)
-            deckSize.text = count.ToString();
+        if (deckSizeText != null)
+            deckSizeText.text = count.ToString();
     }
 
     // Enable or disable the main play buttons
@@ -42,7 +49,7 @@ public class UIManager : MonoBehaviour
     // Enable or disable the play button
     public void EnablePlayButton(bool enabled)
     {
-        playButton.interactable = enabled;
+        nextRoundButton.interactable = enabled;
     }
 
     // Enable or disable the split button
@@ -106,5 +113,43 @@ public class UIManager : MonoBehaviour
         wonText.gameObject.SetActive(false);
         lostText.gameObject.SetActive(false);
         tieText.gameObject.SetActive(false);
+    }
+
+    // Exit the game application
+    public void ExitGame()
+    {
+        Application.Quit();
+    }
+
+    // Reset the current game scene
+    public void ResetGame()
+    {
+        string currentSceneName = SceneManager.GetActiveScene().name;
+        SceneManager.LoadScene(currentSceneName);
+    }
+
+    // Return to the main play screen from other UI screens
+    public void ReturnToPlayScreen()
+    {
+        howToPlayScreen.SetActive(false);
+        creditsScreen.SetActive(false);
+        gameManager.playScreen.SetActive(true);
+        betUI.SetActive(true);
+    }
+
+    // Show the How to Play screen
+    public void ShowHowToPlay()
+    {
+        betUI.SetActive(false);
+        gameManager.playScreen.SetActive(false);
+        howToPlayScreen.SetActive(true);
+    }
+
+    // Show the Credits screen
+    public void ShowCredits()
+    {
+        betUI.SetActive(false);
+        gameManager.playScreen.SetActive(false);
+        creditsScreen.SetActive(true);
     }
 }

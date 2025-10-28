@@ -14,6 +14,7 @@ public class Dealer : MonoBehaviour
 
     [Header("References")]
     public GameManager gameManager;
+    public Player player;
 
     [Header("UI Elements")]
     public Card hiddenCard;
