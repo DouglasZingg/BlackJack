@@ -29,11 +29,6 @@ public class Dealer : MonoBehaviour
         // Initialize dealer's hand
         dealerHand.cards = new List<Card>();
     }
-    void Update()
-    {
-        // Continuously update the displayed value of the dealer's hand
-        UpdateDeckValueText();
-    }
 
     public void UpdateDeckValueText()
     {

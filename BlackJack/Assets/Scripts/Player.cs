@@ -51,7 +51,7 @@ public class Player : MonoBehaviour
         StartCoroutine(HitWithDelay(0.5f));
     }
 
-    public IEnumerator HitWithDelay(float delay)
+    public IEnumerator HitWithDelay(float delay, bool autoStand = true)
     {
         //Deck size check
         if (gameManager.deck.Count < 1)
@@ -78,7 +78,7 @@ public class Player : MonoBehaviour
 
         //Recalculate hand value and check for bust or 5-cards
         firstHand.CalculateValue();
-        if (firstHand.score >= 21 || firstHand.cards.Count == 5)
+        if (autoStand && (firstHand.score >= 21 || firstHand.cards.Count == 5))
             Stand();
 
         //Delay for better UX

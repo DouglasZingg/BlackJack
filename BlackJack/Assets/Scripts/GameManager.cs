@@ -30,6 +30,7 @@ public class GameManager : MonoBehaviour
     public bool roundComplete = false;
     private bool dealerAutoWin = false;
     private int firstHandScore = 0;
+    private List<Card> completedFirstSplitHand = new();
     public bool dealerIsChecking = false;
     public bool notDoublingDown = true;
     public bool notSplit = true;
@@ -90,11 +91,15 @@ public class GameManager : MonoBehaviour
         // Show score chart at start of round
         scoreChart.SetActive(true);
 
+        dealer.canNowPlay = false;
+        dealer.endTurn = false;
+        dealer.UpdateDeckValueText();
+
         // Initial deal sequence with delays for better UX
         yield return StartCoroutine(dealer.HitWithDelay(0.5f));
-        yield return StartCoroutine(player.HitWithDelay(0.5f));
+        yield return StartCoroutine(player.HitWithDelay(0.5f, false));
         yield return StartCoroutine(dealer.HitWithDelay(0.5f));
-        yield return StartCoroutine(player.HitWithDelay(0.5f));
+        yield return StartCoroutine(player.HitWithDelay(0.5f, false));
 
         // Dealer checks for blackjack
         dealerIsChecking = true;
@@ -243,12 +248,16 @@ public class GameManager : MonoBehaviour
         player.secondHandDone = false;
 
         // Hide first-hand cards
-        foreach (Card c in player.firstHand.cards)
+        completedFirstSplitHand.Clear();
+        completedFirstSplitHand.AddRange(player.firstHand.cards);
+
+        foreach (Card c in completedFirstSplitHand)
             c.gameObject.SetActive(false);
 
-        // Move and transfer split card
         Card splitCard = player.splitHand.cards[0];
+
         yield return StartCoroutine(splitCard.MoveToPosition(player.playerCardSlots[0].position, 0.5f));
+
         player.firstHand.cards.Clear();
         player.firstHand.cards.Add(splitCard);
         player.splitHand.cards.Clear();
@@ -415,12 +424,14 @@ public class GameManager : MonoBehaviour
     public void Discard()
     {
         // Move all cards from both player and dealer to discard
+        MoveCardsToDiscard(completedFirstSplitHand, player.availablePlayerCardSlots);
         MoveCardsToDiscard(player.firstHand.cards, player.availablePlayerCardSlots);
         MoveCardsToDiscard(player.splitHand.cards, player.availablePlayerCardSlots);
         MoveCardsToDiscard(dealer.dealerHand.cards, dealer.availableDealerCardSlots);
 
         // Reset scores and visuals
         player.firstHand.score = 0;
+        player.splitHand.score = 0;
         player.splitHand.score = 0;
         dealer.dealerHand.score = 0;
         dealer.hiddenCard.transform.position = startPile.transform.position;
@@ -438,7 +449,7 @@ public class GameManager : MonoBehaviour
         // Reset split/double/round flags
         player.split = false;
         roundComplete = false;
-        notDoublingDown = false;
+        notDoublingDown = true;
         dealerAutoWin = false;
         player.playerAutoWin = false;
 
@@ -496,8 +507,8 @@ public class GameManager : MonoBehaviour
             card.hasBeenPlayed = true;
 
             // Free the slot for future deals
-            if (slotFlags != null && i < slotFlags.Length)
-                slotFlags[i] = true;
+            if (slotFlags != null && card.handIndex >= 0 && card.handIndex < slotFlags.Length)
+                slotFlags[card.handIndex] = true;
 
             // Move card to discard location
             card.transform.position = discardPile.transform.position;

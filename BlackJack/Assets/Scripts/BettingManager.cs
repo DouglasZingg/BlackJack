@@ -39,7 +39,7 @@ public class BettingManager : MonoBehaviour
             increaseBetButton.interactable = false;
         else
             increaseBetButton.interactable = true;
-        if (betAmount + 10 > playerBalance || betAmount + 1 > 500)
+        if (betAmount + 10 > playerBalance || betAmount + 10 > 500)
             increaseBetMoreButton.interactable = false;
         else
             increaseBetMoreButton.interactable = true;
