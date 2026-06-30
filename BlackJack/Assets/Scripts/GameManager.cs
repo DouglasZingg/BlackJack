@@ -9,6 +9,13 @@ public class GameManager : MonoBehaviour
     public List<Card> deck = new();
     public List<Card> discardDeck = new();
 
+    [Header("Deck Settings")]
+    [SerializeField] private int numberOfDecks = 2;
+    [SerializeField] private int minDecks = 2;
+    [SerializeField] private int maxDecks = 8;
+
+    [SerializeField] private List<Card> singleDeckTemplates = new();
+
     [Header("References")]
     public Player player;
     public Dealer dealer;
@@ -39,11 +46,13 @@ public class GameManager : MonoBehaviour
     public GameObject playScreen;
     public GameObject gameOverScreen;
 
+    private void Start()
+    {
+        BuildShoe();
+    }
+
     void Update()
     {
-        // Continuously update deck count in UI
-        ui.SetDeckCount(deck.Count);
-
         // Only trigger auto end for standard (non-split an double) rounds
         if (!player.split && player.endTurn && dealer.endTurn && notDoublingDown && notSplit && roundComplete)
         {
@@ -63,10 +72,10 @@ public class GameManager : MonoBehaviour
     {
         // Hides bet UI and play screen
         ui.betUI.SetActive(false);
+        ui.deckUI.SetActive(false);
         playScreen.SetActive(false);
 
         // Shows gameplay elements
-        ui.deckSizeText.gameObject.SetActive(true);
         dealer.hiddenCard.gameObject.SetActive(true);
         cards.SetActive(true);
         cardBack.SetActive(true);
@@ -529,5 +538,64 @@ public class GameManager : MonoBehaviour
         Discard();
         gameOverScreen.SetActive(false);
     }
-}
 
+    public void BuildShoe()
+    {
+        numberOfDecks = Mathf.Clamp(numberOfDecks, minDecks, maxDecks);
+
+        deck.Clear();
+        discardDeck.Clear();
+
+        foreach (Card template in singleDeckTemplates)
+        {
+            template.gameObject.SetActive(false);
+        }
+
+        for (int deckIndex = 0; deckIndex < numberOfDecks; deckIndex++)
+        {
+            foreach (Card template in singleDeckTemplates)
+            {
+                Card newCard = Instantiate(template, startPile.transform.position, Quaternion.identity, cards.transform);
+                newCard.gameObject.SetActive(false);
+                newCard.hasBeenPlayed = false;
+                newCard.handIndex = -1;
+
+                deck.Add(newCard);
+            }
+        }
+    }
+
+    public void IncreaseDeckCount()
+    {
+        if (player.firstHand.cards.Count > 0 || dealer.dealerHand.cards.Count > 0)
+            return;
+
+        if (numberOfDecks >= maxDecks)
+            return;
+
+        numberOfDecks++;
+        UpdateDeckCountUI();
+        BuildShoe();
+    }
+
+    public void DecreaseDeckCount()
+    {
+        if (player.firstHand.cards.Count > 0 || dealer.dealerHand.cards.Count > 0)
+            return;
+
+        if (numberOfDecks <= minDecks)
+            return;
+
+        numberOfDecks--;
+        UpdateDeckCountUI();
+        BuildShoe();
+    }
+
+    private void UpdateDeckCountUI()
+    {
+        ui.deckCountText.text = numberOfDecks.ToString();
+
+        ui.increaseDeckButton.interactable = numberOfDecks < maxDecks;
+        ui.decreaseDeckButton.interactable = numberOfDecks > minDecks;
+    }
+}

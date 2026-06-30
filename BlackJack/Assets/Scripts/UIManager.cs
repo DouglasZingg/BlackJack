@@ -7,12 +7,13 @@ using UnityEngine.UI;
 public class UIManager : MonoBehaviour
 {
     [Header("UI Elements")]
-    public TextMeshProUGUI deckSizeText;
     public TextMeshProUGUI wonText;
     public TextMeshProUGUI lostText;
     public TextMeshProUGUI tieText;
     public TextMeshProUGUI messageText;
+    public TextMeshProUGUI deckCountText;
     public GameObject betUI;
+    public GameObject deckUI;
 
     [Header("Buttons")]
     public Button hitButton;
@@ -23,6 +24,9 @@ public class UIManager : MonoBehaviour
     public Button exitButton;
     public Button resetButton;
     public Button backButton;
+    public Button increaseDeckButton;
+    public Button decreaseDeckButton;
+
 
     [Header("References")]
     [SerializeField]
@@ -30,13 +34,6 @@ public class UIManager : MonoBehaviour
     public GameManager gameManager;
     public GameObject howToPlayScreen;
     public GameObject creditsScreen;
-
-    // Set the deck count display
-    public void SetDeckCount(int count)
-    {
-        if (deckSizeText != null)
-            deckSizeText.text = count.ToString();
-    }
 
     // Enable or disable the main play buttons
     public void EnablePlayButtons(bool enabled)
@@ -135,12 +132,14 @@ public class UIManager : MonoBehaviour
         creditsScreen.SetActive(false);
         gameManager.playScreen.SetActive(true);
         betUI.SetActive(true);
+        deckUI.SetActive(true);
     }
 
     // Show the How to Play screen
     public void ShowHowToPlay()
     {
         betUI.SetActive(false);
+        deckUI.SetActive(false);
         gameManager.playScreen.SetActive(false);
         howToPlayScreen.SetActive(true);
     }
@@ -149,6 +148,7 @@ public class UIManager : MonoBehaviour
     public void ShowCredits()
     {
         betUI.SetActive(false);
+        deckUI.SetActive(false);
         gameManager.playScreen.SetActive(false);
         creditsScreen.SetActive(true);
     }
